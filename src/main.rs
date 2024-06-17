@@ -1,12 +1,11 @@
 use std::{io::{stdout, Result, Stdout, Write}, num::ParseIntError, time::Duration};
 use std::{thread,time};
 use rand::{thread_rng, Rng};
+use material_icons::{Icon, icon_to_char};
 use crossterm::{
     cursor::{Hide, MoveTo, Show}, event::{self, poll, read, Event, KeyCode}, execute, style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor}, terminal::{disable_raw_mode, enable_raw_mode, size, Clear, ClearType}, ExecutableCommand, QueueableCommand
     
 };
-
-
 
 struct World{
 
@@ -39,10 +38,12 @@ fn draw(mut sc: &Stdout,world : &World) -> std::io::Result<()> {
 
     }
 
-
+    let martini_emoji = '\u{1F6EC}';
     // draw the player
     sc.queue(MoveTo(world.player_C,world.player_l))?;
-    sc.queue(Print("P"))?;
+  
+    sc.queue(Print(martini_emoji))?;
+    
 
     sc.flush();
     Ok(())
