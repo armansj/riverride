@@ -7,6 +7,20 @@ use crossterm::{
     
 };
 
+
+struct  Enemy{
+    l:u16,
+    c:u16,
+    
+}
+
+struct Bullet{
+    l:u16,
+    c:u16,
+    energy:u16,
+}
+
+
 struct World{
 
     player_C : u16,
@@ -17,6 +31,8 @@ struct World{
     died : bool,
     next_start: u16,
     next_end: u16,
+    enemy :Vec<Enemy>,
+    bullet:Vec<Bullet>,
 
 }
 
@@ -39,6 +55,31 @@ fn draw(mut sc: &Stdout,world : &World) -> std::io::Result<()> {
     }
 
     let martini_emoji = '\u{1F6EC}';
+
+    // drwa the enemy
+
+    for e in &world.enemy{
+
+        sc.queue(MoveTo(e.c, e.l as u16))?;
+        sc.queue(Print("E"))?;
+
+    }
+
+
+    // draw bullet
+
+    for b in &world.bullet{
+
+        sc.queue(MoveTo(b.c, b.l as u16))?;
+        sc.queue(Print("."))?;
+
+    }
+
+
+
+
+
+
     // draw the player
     sc.queue(MoveTo(world.player_C,world.player_l))?;
   
@@ -73,6 +114,54 @@ fn physics(mut world : World) -> Result<World> {
     if(world.next_start>world.map[0].0){
         world.map[0].0 +=1;
     }
+
+
+
+
+
+    // if enemy hit something
+
+    for i in (0..world.enemy.len()).rev() {
+
+        if world.enemy[i].l == world.player_l && world.enemy[i].c == world.player_C{
+
+            // palyer hit enemy
+            world.died = true;
+
+        }
+        for j in  (0..world.bullet.len()).rev(){
+            if(world.bullet[j].l == world.enemy[i].l && world.bullet[j].c == world.enemy[i].c){
+              world.enemy.remove(i);
+            }
+
+
+        }
+
+
+
+
+
+       }
+
+
+
+
+       // move the bullet
+
+       for i in  (0..world.bullet.len()).rev(){
+
+        if(world.bullet[i].energy == 0 || world.bullet[i].l<2){
+            world.bullet.remove(i);
+        }else {
+            world.bullet[i].energy -=1;
+            world.bullet[i].l -=2;
+            if(world.bullet[i].l<1){world.bullet[i].energy=0}
+        }
+
+       }
+
+
+
     let mut rng = thread_rng();
 
     if  rng.gen_range(0..10)>7{
@@ -82,14 +171,37 @@ fn physics(mut world : World) -> Result<World> {
     // TODO : possible bug might comes out 
     if world.next_start == world.map[0].0 && world.next_end == world.map[0].1{
 
-        world.next_start = rng.gen_range(world.map[0].0 - 5..world.map[0].1 - 5);
-        world.next_end = rng.gen_range(world.map[0].0 + 5..world.map[0].1 + 5);
+        world.next_start = rng.gen_range(world.map[0].0 - 5..world.map[0].1 - 4);
+        world.next_end = rng.gen_range(world.map[0].0 + 5..world.map[0].1 + 4);
         if world.next_end - world.next_start <=3{
             world.next_start -=3;
         }
 
 
        }
+
+
+       for i in (0..world.enemy.len()).rev() {
+
+        if world.enemy[i].l < world.maxl{
+            world.enemy[i].l+=1;
+
+        }else {
+            world.enemy.remove(i);
+        }
+
+
+       }
+
+       if(rng.gen_range(0..10)>=9){
+        let new_c =rng.gen_range(world.map[0].0..world.map[1].1);
+        world.enemy.push(
+            Enemy { l: 0, c: new_c }
+        )
+       }
+
+
+
     }
 
     
@@ -98,6 +210,10 @@ fn physics(mut world : World) -> Result<World> {
     Ok(world)
     
 }
+
+
+
+// MOVE and add enemy
 
 fn main() -> std::io::Result<()> {
 
@@ -121,6 +237,8 @@ fn main() -> std::io::Result<()> {
         died:false,
         next_end: maxc/2 +10,
         next_start : maxc/2 -10,
+        enemy:vec![],
+        bullet:vec![],
 
     };
 
@@ -162,6 +280,18 @@ fn main() -> std::io::Result<()> {
                             world.player_C +=1
                              };
                                     }
+
+                        KeyCode::Char(' ')=>{
+                            if(world.bullet.len() == 0 ){
+                                world.bullet.push(Bullet{
+                                    l:world.player_l+1,
+                                    c:world.player_C,
+                                    energy:10,
+                                })
+                                    };
+                                        }              
+
+                                    
                         _=> {},
                         
                     }
